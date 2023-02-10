@@ -27,107 +27,111 @@ Read data file into R:
 
 ```{r, chunk0, echo=FALSE}
 
-work <- read_csv("KIRBY_BAUER_DEMO_ONLY.csv", col_types =c(PLATE_ID = "factor", ZONE_mm = "numeric", ANTIBIOTIC = "factor"))
-
-view(work)
+work <- read_csv("KIRBY_BAUER_DEMO_ONLY.csv", col_types =c(PLATE_ID = "factor", ZONE_ID = "factor", CULTURE_ID = "factor", ZONE_mm = "numeric", ANTIBIOTIC = "factor", COLUMN = "factor"))
+#glimpse(work)
 ```
-
+Column names: 
 
 ```{r, chunk1, echo=FALSE}
-# colname <- colnames(work)
-# kable(colname)
+colname <- colnames(work)
+kable(colname)
 ```
 Samples were taken from the following columns: 
 
-```{r, chunk1, echo=FALSE}
+```{r, chunk01, echo=FALSE}
 
 unique(work$COLUMN) %>% as.matrix(COLUMN, ncol=6) -> samples_plated
 
-kable(samples_plated)
+kable(samples_plated, caption = "Column Samples Plated")
 ```
 
+These samples were plated using the standard Kirby-Bauer disk diffusion protocol. Disks were impregnated with 15ug erythromycin each. Two disks were placed on each plate, and each isolate was spread on two plates. For example, isolate C30_D1_R2_IS1_1 was plated twice: on plate C30_D1_R2_IS1_1 and on plate C30_D1_R2_IS1_2. Each plate contained two diffusion disk zones- zone A and zone B. So, zones C30_D1_R2_IS1_1A and C30_D1_R2_IS1_1B were the two zones taken from plate C30_D1_R2_IS1_1. 
+
+```{r, chunk3, echo=FALSE}
+
+unique(work$CULTURE_ID) %>% as.matrix(COLUMN, ncol=6) -> cultures_plated
+
+kable(cultures_plated, caption = "Cultures Plated")
+```
+# Examining the Data 
+
+```{r, chunk2, echo=FALSE}
 
  
+tapply(work$ZONE_mm, work$COLUMN, mean)
 
-```{r, chunk7, echo=FALSE}
-# # Start by finding mean percent change from control to erm for each treatment. The first set of numbers represents the % changes without any outliers removed. The second shows the same with four outliers removed.
-# 
-# tapply(percwk1$PERCENT_CHANGE_CON_TO_ERM, percwk1$COLUMN_TREATMENT, mean)
-# 
-# tapply(percwk$PERCENT_CHANGE_CON_TO_ERM, percwk$COLUMN_TREATMENT, mean)
+#tapply(work$ZONE_mm, work$COLUMM_TREATMENT, mean) For when the column treatment column exists in this document
 ```
-# Below this point all is from the cfu study- edit for disks
-
-## Percent change CFU/ml from control to erm plates- no outliers removed
-
 
 Inspect the data as you want. Next, generate standard deviation for your column of interest. Then plot the mean cfu/g with error bars. 
 
 ```{r, chunk8, echo=FALSE}
-pwork.summary1 <- percwk1 %>%
-  group_by(COLUMN_TREATMENT) %>%
+work.summary <- work %>%
+  group_by(COLUMN) %>%
   summarise(
-    sd = sd(PERCENT_CHANGE_CON_TO_ERM, na.rm = TRUE),
-    PERCENT_CHANGE_CON_TO_ERM = mean(PERCENT_CHANGE_CON_TO_ERM)
+    sd = sd(ZONE_mm, na.rm = TRUE),
+    ZONE_mm = mean(ZONE_mm)
   )
-pwork.summary <- percwk %>%
-  group_by(COLUMN_TREATMENT) %>%
-  summarise(
-    sd = sd(PERCENT_CHANGE_CON_TO_ERM, na.rm = TRUE),
-    PERCENT_CHANGE_CON_TO_ERM = mean(PERCENT_CHANGE_CON_TO_ERM)
-  )
+
+# work.summary2 <- work %>%
+#   group_by(COLUMN_TREATMENT) %>%
+#   summarise(
+#     sd = sd(ZONE_mm, na.rm = TRUE),
+#     ZONE_mm = mean(ZONE_mm)
+#   )
+
 ```
 This shows the summary of the all-sample percent change data
 ``` {r, chunk9, echo=FALSE}
-kable(pwork.summary1) 
-```
-Doing a one-way anova looking at the effect of Column treatment on percent change from con to erm, using the full data set (no outliers removed): 
-
-``` {r, chunk090, echo=FALSE}
-one.way.perc.all <- aov(PERCENT_CHANGE_CON_TO_ERM ~ COLUMN_TREATMENT, data = percwk)
-summary(one.way.perc.all) 
+kable(work.summary, caption = "Standard Deviation and Mean for Zone Size (mm) by Column") 
 ```
 
-Now we visualize the percent changes, by treatment, with error bars. 
+``` {r, chunk6, echo=FALSE}
+# kable(work.summary2, caption = "Standard Deviation and Mean for Zone Size (mm) by Column Treatment") 
+```
+Doing a one-way anova looking at the effect of Column ID on zone size: 
 
-First the data with no outliers removed: 
+``` {r, chunk5, echo=FALSE}
+anova.zone.column <- aov(ZONE_mm ~ COLUMN, data = work)
+summary(anova.zone.column) 
+```
+Doing a one-way anova looking at the effect of column treatment on zone size: 
 
-``` {r, chunk10, echo=FALSE}
-cfu_column_trt.pwrk1<- ggplot(percwk1, aes(COLUMN_TREATMENT, PERCENT_CHANGE_CON_TO_ERM,  color=COLUMN_TREATMENT)) +
-  ggtitle("Percent change, control to erm plates, by column treatment, outliers included ") +
-  labs(x = "Column Treatment", y = "Percent change") +
+``` {r, chunk7, echo=FALSE}
+# anova.zone.column.trt <- aov(ZONE_mm ~ COLUMN_TREATMENT, data = work)
+# summary(anova.zone.column.trt) 
+```
+
+Now we visualize zone sizes, by column ID, with error bars. 
+
+
+``` {r, chunk11, echo=FALSE}
+zone.mm.col<- ggplot(work, aes(COLUMN, ZONE_mm,  color=COLUMN)) +
+  ggtitle("Zone size (mm) by Column ID") +
+  labs(x = "Column", y = "Zone (mm)") +
   geom_jitter(position = position_jitter(0.2), color = "gray") + 
-  geom_pointrange(aes(ymin = PERCENT_CHANGE_CON_TO_ERM -sd, 
-                      ymax = PERCENT_CHANGE_CON_TO_ERM +sd),data = pwork.summary1) 
-cfu_column_trt.pwrk1
-ggsave("Growth by Column Treatment perc all samples.png")
+  geom_pointrange(aes(ymin = ZONE_mm -sd, 
+                      ymax = ZONE_mm +sd),data = work.summary) 
+zone.mm.col 
+#ggsave("Zone_size_mm_by_Column_ID")
 ```
 
-## Percent change CFU/ml from control to erm plates- outliers removed
+Now we visualize zone sizes, by treatment, with error bars. 
 
-This shows the summary of the outlier-removed percent change data
-``` {r, chunk009, echo=FALSE}
-kable(pwork.summary) 
-```
-Results of one-way ANOVA testing the effect of column treatment on percent change from con to erm using the data set with outliers removed: 
 
-``` {r, chunk0901, echo=FALSE}
-one.way.perc.cut <- aov(PERCENT_CHANGE_CON_TO_ERM ~ COLUMN_TREATMENT, data = percwk1)
-summary(one.way.perc.cut) 
+``` {r, chunk12, echo=FALSE}
+# zone.mm.trt<- ggplot(work, aes(COLUMN_TREATMENT, ZONE_mm,  color=COLUMN_TREATMENT)) +
+#   ggtitle("Zone size (mm) by Column Treatment") +
+#   labs(x = "Column Treatment", y = "Zone (mm)") +
+#   geom_jitter(position = position_jitter(0.2), color = "gray") + 
+#   geom_pointrange(aes(ymin = ZONE_mm -sd, 
+#                       ymax = ZONE_mm +sd),data = work.summary2) 
+# zone.mm.trt
+# ggsave("Zone_size_mm_by_Column_Treatment")
 ```
-Then visualize the data with outliers removed: 
 
-``` {r, chunk00101, echo=FALSE}
-cfu_column_trt.pwrk<- ggplot(percwk, aes(COLUMN_TREATMENT, PERCENT_CHANGE_CON_TO_ERM,  color=COLUMN_TREATMENT)) +
-  ggtitle("Percent change, control to erm plates, by column treatment, outliers removed") +
-  labs(x = "Column Treatment", y = "Percent change") +
-  geom_jitter(position = position_jitter(0.2), color = "gray") + 
-  geom_pointrange(aes(ymin = PERCENT_CHANGE_CON_TO_ERM -sd, 
-                      ymax = PERCENT_CHANGE_CON_TO_ERM +sd),data = pwork.summary) 
-cfu_column_trt.pwrk
-ggsave("Growth by Column Treatment perc.png")
-```
+
 ## Summary
 
-
+To be continued. Please note that (as of 2/10/23) data and figures are using a demo (very incomplete) data set only. No conclusions can be made from current iteration. 
 
