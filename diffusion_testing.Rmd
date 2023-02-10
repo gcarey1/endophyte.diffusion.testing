@@ -1,0 +1,133 @@
+---
+title: "Endophyte Erythromycin Diffusion Testing"
+author: "Grace Carey"
+date: "2023-02-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(janitor)
+library(tidyverse)
+library(dplyr )
+library(ggplot2)
+library(reshape2)
+library(magrittr)
+library(knitr)
+library(data.table)
+```
+
+## Introduction
+
+The purpose of this document is to describe and visualize the results of the KB disk diffusion testing experiment on the AMR STRIPS 2021 root endophytes. 
+
+## Prep
+
+Read data file into R: 
+
+```{r, chunk0, echo=FALSE}
+
+work <- read_csv("KIRBY_BAUER_DEMO_ONLY.csv", col_types =c(PLATE_ID = "factor", ZONE_mm = "numeric", ANTIBIOTIC = "factor"))
+
+view(work)
+```
+
+
+```{r, chunk1, echo=FALSE}
+# colname <- colnames(work)
+# kable(colname)
+```
+Samples were taken from the following columns: 
+
+```{r, chunk1, echo=FALSE}
+
+unique(work$COLUMN) %>% as.matrix(COLUMN, ncol=6) -> samples_plated
+
+kable(samples_plated)
+```
+
+
+ 
+
+```{r, chunk7, echo=FALSE}
+# # Start by finding mean percent change from control to erm for each treatment. The first set of numbers represents the % changes without any outliers removed. The second shows the same with four outliers removed.
+# 
+# tapply(percwk1$PERCENT_CHANGE_CON_TO_ERM, percwk1$COLUMN_TREATMENT, mean)
+# 
+# tapply(percwk$PERCENT_CHANGE_CON_TO_ERM, percwk$COLUMN_TREATMENT, mean)
+```
+# Below this point all is from the cfu study- edit for disks
+
+## Percent change CFU/ml from control to erm plates- no outliers removed
+
+
+Inspect the data as you want. Next, generate standard deviation for your column of interest. Then plot the mean cfu/g with error bars. 
+
+```{r, chunk8, echo=FALSE}
+pwork.summary1 <- percwk1 %>%
+  group_by(COLUMN_TREATMENT) %>%
+  summarise(
+    sd = sd(PERCENT_CHANGE_CON_TO_ERM, na.rm = TRUE),
+    PERCENT_CHANGE_CON_TO_ERM = mean(PERCENT_CHANGE_CON_TO_ERM)
+  )
+pwork.summary <- percwk %>%
+  group_by(COLUMN_TREATMENT) %>%
+  summarise(
+    sd = sd(PERCENT_CHANGE_CON_TO_ERM, na.rm = TRUE),
+    PERCENT_CHANGE_CON_TO_ERM = mean(PERCENT_CHANGE_CON_TO_ERM)
+  )
+```
+This shows the summary of the all-sample percent change data
+``` {r, chunk9, echo=FALSE}
+kable(pwork.summary1) 
+```
+Doing a one-way anova looking at the effect of Column treatment on percent change from con to erm, using the full data set (no outliers removed): 
+
+``` {r, chunk090, echo=FALSE}
+one.way.perc.all <- aov(PERCENT_CHANGE_CON_TO_ERM ~ COLUMN_TREATMENT, data = percwk)
+summary(one.way.perc.all) 
+```
+
+Now we visualize the percent changes, by treatment, with error bars. 
+
+First the data with no outliers removed: 
+
+``` {r, chunk10, echo=FALSE}
+cfu_column_trt.pwrk1<- ggplot(percwk1, aes(COLUMN_TREATMENT, PERCENT_CHANGE_CON_TO_ERM,  color=COLUMN_TREATMENT)) +
+  ggtitle("Percent change, control to erm plates, by column treatment, outliers included ") +
+  labs(x = "Column Treatment", y = "Percent change") +
+  geom_jitter(position = position_jitter(0.2), color = "gray") + 
+  geom_pointrange(aes(ymin = PERCENT_CHANGE_CON_TO_ERM -sd, 
+                      ymax = PERCENT_CHANGE_CON_TO_ERM +sd),data = pwork.summary1) 
+cfu_column_trt.pwrk1
+ggsave("Growth by Column Treatment perc all samples.png")
+```
+
+## Percent change CFU/ml from control to erm plates- outliers removed
+
+This shows the summary of the outlier-removed percent change data
+``` {r, chunk009, echo=FALSE}
+kable(pwork.summary) 
+```
+Results of one-way ANOVA testing the effect of column treatment on percent change from con to erm using the data set with outliers removed: 
+
+``` {r, chunk0901, echo=FALSE}
+one.way.perc.cut <- aov(PERCENT_CHANGE_CON_TO_ERM ~ COLUMN_TREATMENT, data = percwk1)
+summary(one.way.perc.cut) 
+```
+Then visualize the data with outliers removed: 
+
+``` {r, chunk00101, echo=FALSE}
+cfu_column_trt.pwrk<- ggplot(percwk, aes(COLUMN_TREATMENT, PERCENT_CHANGE_CON_TO_ERM,  color=COLUMN_TREATMENT)) +
+  ggtitle("Percent change, control to erm plates, by column treatment, outliers removed") +
+  labs(x = "Column Treatment", y = "Percent change") +
+  geom_jitter(position = position_jitter(0.2), color = "gray") + 
+  geom_pointrange(aes(ymin = PERCENT_CHANGE_CON_TO_ERM -sd, 
+                      ymax = PERCENT_CHANGE_CON_TO_ERM +sd),data = pwork.summary) 
+cfu_column_trt.pwrk
+ggsave("Growth by Column Treatment perc.png")
+```
+## Summary
+
+
+
