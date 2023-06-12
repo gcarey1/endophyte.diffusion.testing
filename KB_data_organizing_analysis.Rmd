@@ -1,0 +1,167 @@
+---
+title: "Endophyte Erythromycin Diffusion Testing"
+author: "Grace Carey"
+date: "2023-02-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(janitor)
+library(tidyverse)
+library(dplyr )
+library(ggplot2)
+library(reshape2)
+library(magrittr)
+library(knitr)
+library(data.table)
+```
+
+## Introduction
+
+The purpose of this document is to describe and visualize the results of the KB disk diffusion testing experiment on AMR STRIPS 2021 root endophytes.
+
+## Prep
+
+Read data file into R:
+
+```{r, chunk0, echo=FALSE}
+
+worka <- read_csv("KB_zones_working.csv", col_types =c(PLATE_ID = "factor", ZONE_mm = "numeric", Column = "factor", Antibiotic = "factor"))
+glimpse(worka)
+
+colkey <- read_csv("Column_key.csv", col_types =c(Column = "factor", Treatment = "factor", Block = "factor"))
+glimpse(colkey)
+work <- inner_join(worka, colkey, by=c('Column'='Column'))
+#glimpse(work)
+view(work)
+```
+
+Column names:
+
+```{r, chunk1, echo=FALSE}
+colname <- colnames(work)
+kable(colname)
+```
+
+Samples were taken from the following columns:
+
+```{r, chunk01, echo=FALSE}
+
+unique(work$Column) %>% as.matrix(Column, ncol=6) -> samples_plated
+
+kable(samples_plated, caption = "Column Samples Plated")
+```
+
+These samples were plated using the standard Kirby-Bauer disk diffusion protocol. Disks were impregnated with 15ug erythromycin each. Two disks were placed on each plate, and each isolate was spread on two plates. For example, isolate C30_D1_R2_IS1_1 was plated twice: on plate C30_D1_R2_IS1_1 and on plate C30_D1_R2_IS1_2. Each plate contained two diffusion disk zones- zone A and zone B. So, zones C30_D1_R2_IS1_1A and C30_D1_R2_IS1_1B were the two zones taken from plate C30_D1_R2_IS1_1.
+
+```{r, chunk3, echo=FALSE}
+
+#unique(work$PLATE_ID) %>% as.matrix(Column, ncol=6) -> cultures_plated
+
+#kable(cultures_plated, caption = "Cultures Plated")
+```
+
+# Examining the Data
+
+```{r, chunk2, echo=FALSE}
+
+ 
+# tapply(work$ZONE_mm, work$Column, mean)
+# 
+# tapply(work$ZONE_mm, work$Treatment, mean)
+
+#tapply(work$ZONE_mm, work$COLUMM_TREATMENT, mean) For when the column treatment column exists in this document
+```
+
+Inspect the data as you want. Next, generate standard deviation for your column of interest. Then plot the mean cfu/g with error bars.
+
+```{r, chunk8, echo=FALSE}
+# work.summary <- work %>%
+#   group_by(Column) %>%
+#   summarise(
+#     sd = sd(ZONE_mm, na.rm = TRUE),
+#     ZONE_mm = mean(ZONE_mm)
+#   )
+# 
+# work.summary2 <- work %>%
+#    group_by(Treatment) %>%
+#    summarise(
+#      sd = sd(ZONE_mm, na.rm = TRUE),
+#      ZONE_mm = mean(ZONE_mm)
+#    )
+
+```
+
+This shows the summary of the all-sample percent change data
+
+```{r, chunk9, echo=FALSE}
+# kable(work.summary, caption = "Standard Deviation and Mean for Zone Size (mm) by Column") 
+```
+
+```{r, chunk6, echo=FALSE}
+# kable(work.summary2, caption = "Standard Deviation and Mean for Zone Size (mm) by Column Treatment") 
+```
+
+Doing a one-way anova looking at the effect of Column ID on zone size:
+
+```{r, chunk5, echo=FALSE}
+# anova.zone.column <- aov(ZONE_mm ~ Column, data = work)
+# summary(anova.zone.column) 
+
+#anova.zone.treatment <- aov(ZONE_mm ~ COLUMN_TREATMENT, data = work)
+#summary(anova.zone.treatment) 
+```
+
+Doing a one-way anova looking at the effect of column treatment on zone size:
+
+```{r, chunk7, echo=FALSE}
+# anova.zone.column.trt <- aov(ZONE_mm ~ Treatment, data = work)
+# summary(anova.zone.column.trt) 
+```
+
+Now we visualize zone sizes, by column ID, with error bars.
+
+```{r, chunk11, echo=FALSE}
+# zone.mm.col<- ggplot(work, aes(Column, ZONE_mm,  color=Column)) +
+#   ggtitle("Zone size (mm) by Column ID") +
+#   labs(x = "Column", y = "Zone (mm)") +
+#   geom_jitter(position = position_jitter(0.2), color = "gray") + 
+#   geom_pointrange(aes(ymin = ZONE_mm -sd, 
+#                       ymax = ZONE_mm +sd),data = work.summary) 
+# zone.mm.col 
+#ggsave("Zone_size_mm_by_Column_ID_5_23")
+```
+
+Now we visualize zone sizes, by treatment, with error bars.
+
+```{r, chunk12, echo=FALSE}
+# zone.mm.trt<- ggplot(work, aes(Treatment, ZONE_mm,  color=Treatment)) +
+#    ggtitle("Zone size (mm) by Column Treatment") +
+#    labs(x = "Column Treatment", y = "Zone (mm)") +
+#    geom_jitter(position = position_jitter(0.2), color = "gray") + 
+#    geom_pointrange(aes(ymin = ZONE_mm -sd, 
+#                        ymax = ZONE_mm +sd),data = work.summary2) 
+#  zone.mm.trt
+ #ggsave("Zone_size_mm_by_Column_Treatment")
+```
+
+## Violin Plots
+
+I think it might be interesting to see a violin plot of the data shown in the scatterplot. Especially considering that the digestate (at least as of 5/25/23) might have a higher number of 0mm zones (indicating no measured susceptibility to erythromycin).
+
+```{r, chunk13, echo=FALSE}
+# zone.mm.trt<- ggplot(work, aes(Treatment, ZONE_mm,  color=Treatment)) +  geom_violin(trim=FALSE)+
+#    ggtitle("Zone size (mm) by Column Treatment") +
+#    labs(x = "Column Treatment", y = "Zone (mm)") +
+#    geom_jitter(position = position_jitter(0.1), color = "gray") + 
+#    geom_pointrange(aes(ymin = ZONE_mm -sd, 
+#                        ymax = ZONE_mm +sd),data = work.summary2) 
+#  zone.mm.trt
+
+```
+
+
+## Summary
+
+To be continued. Please note that (as of 5/23/23) data and figures are using a demo (very incomplete) data set only. No conclusions can be made from current iteration.
