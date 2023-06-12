@@ -57,9 +57,31 @@ These samples were plated using the standard Kirby-Bauer disk diffusion protocol
 
 ```{r, chunk3, echo=FALSE}
 
-#unique(work$PLATE_ID) %>% as.matrix(Column, ncol=6) -> cultures_plated
+# unique(work$PLATE_ID) %>% as.matrix(Column, ncol=6) -> cultures_plated
+# 
+# kable(cultures_plated, caption = "Cultures Plated")
+# 
+# write.csv(cultures_plated, "\\cultures_plated_061223.csv", row.names=FALSE)
 
-#kable(cultures_plated, caption = "Cultures Plated")
+counting <- read.csv("counting_cultures.csv") #read in temporary cultures file
+glimpse(counting)
+unique(counting$COLUMN) %>% as.matrix(Column, ncol=6) -> cols_incounting
+cols_incounting
+write.csv(cols_incounting, "\\cols_incounting_061223.csv", row.names=FALSE)
+
+unique(counting$COLUMN_D) %>% as.matrix(Column, ncol=6) -> CD_incounting
+CD_incounting
+write.csv(CD_incounting, "\\CD_incounting_061223.csv", row.names=FALSE)
+
+
+unique(counting$C_D_R) %>% as.matrix(Column, ncol=6) -> CDR_incounting
+CDR_incounting
+write.csv(CDR_incounting, "\\CDR_incounting_061223.csv", row.names=FALSE)
+
+unique(counting$C_D_R_IS) %>% as.matrix(Column, ncol=6) -> CDRIS_incounting
+CDRIS_incounting
+write.csv(CDRIS_incounting, "\\CDRIS_incounting_061223.csv", row.names=FALSE)
+
 ```
 
 # Examining the Data
